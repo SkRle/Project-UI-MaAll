@@ -1,4 +1,4 @@
-import NOFOUND from "../image/HTML-404-Error-Page.gif";
+import NOFOUND from "../image/404.jpg";
 const Home = () => {
   return <img className="w-100 h-100" src={NOFOUND} alt="" />;
 };

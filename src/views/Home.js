@@ -14,12 +14,17 @@ const Home = () => {
   const [thread, setThread] = useState([]);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
-  const [category, setCategory] = useState("");
+  const [category, setCategory] = useState();
   const [userID, setUserID] = useState("");
   const [errMgs, setErrMgs] = useState("");
+  const [categorylist, setCategorylist] = useState([]);
 
   useEffect(() => {
     getThread();
+  }, []);
+
+  useEffect(() => {
+    getCategory();
   }, []);
 
   useEffect(() => {
@@ -33,7 +38,7 @@ const Home = () => {
       setToken(getUser.token);
       setPerMiss(getUser.data.permission_id);
     }
-  });
+  }, []);
 
   const checkFormPost = () => {
     if (title === "" || content === "") {
@@ -41,6 +46,13 @@ const Home = () => {
     } else if (category === "") {
       setErrMgs("please choose category");
     }
+  };
+
+  const getCategory = async () => {
+    await axios.get("/public/get-category").then((res) => {
+      setCategorylist(res.data.data);
+    });
+    // console.log(categorylist);
   };
 
   const getThread = async () => {
@@ -66,8 +78,13 @@ const Home = () => {
         axios({
           url: `/thread/delete-thread`,
           method: "delete",
-          data: { user_id: userID, post_id: postID },
-          headers: { Authorization: `Bearer ${token}` },
+          data: {
+            user_id: userID,
+            post_id: postID,
+          },
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         })
           .then((res) => {
             if (res?.status === 200) {
@@ -93,11 +110,6 @@ const Home = () => {
   const postThread = async (e) => {
     e.preventDefault();
     checkFormPost();
-    // console.log(title);
-    // console.log(content);
-    // console.log(category);
-    // console.log(userID);
-    // console.log(token);
     if (errMgs === "" && title !== "" && content !== "" && category !== "") {
       await axios({
         url: `/thread/post-thread`,
@@ -108,7 +120,9 @@ const Home = () => {
           post_category: category,
           user_id: userID,
         },
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       })
         .then((res) => {
           if (res?.status === 200) {
@@ -136,17 +150,51 @@ const Home = () => {
     }
   };
 
-  // const getThredDetail = async (e) => {
-  //   e.preventDefault();
-  //   console.log(e.target.id);
-  // };
+  const selectCategory = async (e) => {
+    if (e) {
+      await axios.get(`/public/get-category/${e}`).then((res) => {
+        setThread(res.data.data);
+      });
+    } else {
+      getThread();
+    }
+  };
   return (
     <FrontendLayout>
       <div className="container-md mt-2">
         <div className="row">
+          <div className="col-6 mt-2 mb-2 d-flex justify-content-center">
+            <h4>
+              <span
+                onClick={() => selectCategory(0)}
+                className="badge rounded-pill bg-primary mx-1 pointer"
+              >
+                All
+              </span>
+            </h4>
+            {categorylist.map((o, i) => {
+              return (
+                <h4>
+                  <span
+                    key={o.category_id}
+                    onClick={() => selectCategory(o.category_id)}
+                    className="badge rounded-pill bg-primary mx-1 pointer"
+                  >
+                    {o.category_name}
+                  </span>
+                </h4>
+              );
+            })}
+          </div>
           <div className="col-sm-7 col-md-7 col-12 pb-4">
             {thread.map((e, k) => (
-              <Card key={k} className="mt-2  w-100" style={{ width: "22rem" }}>
+              <Card
+                key={k}
+                className="mt-2  w-100"
+                style={{
+                  width: "22rem",
+                }}
+              >
                 <Card.Body>
                   <Card.Title className=" fs-6 text-muted">
                     {e.user_fname} {e.user_lname}
@@ -171,17 +219,17 @@ const Home = () => {
                       </button>
                     </Card.Text>
                   ) : (
-                    <></>
+                    <> </>
                   )}
                 </Card.Body>
               </Card>
             ))}
           </div>
+
           <div className="mt-2 col-sm-5 col-md-5 col-12 pb-4">
             <form id="algin-form">
               <div className="form-group">
-                <h4>Want to post something??</h4>
-                <label>Title</label>
+                <h4> Want to post something ? ? </h4> <label> Title </label>
                 <input
                   ref={userRef}
                   onChange={(e) => {
@@ -191,7 +239,7 @@ const Home = () => {
                   className="form-control bg-light"
                   value={title}
                 ></input>
-                <label>content</label>
+                <label> content </label>
                 <textarea
                   id=""
                   cols="30"
@@ -204,7 +252,7 @@ const Home = () => {
                   value={content}
                   className="form-control  bg-light"
                 ></textarea>
-                <label>category</label>
+                <label> category </label>
                 <select
                   ref={userRef}
                   onChange={(e) => {
@@ -214,9 +262,14 @@ const Home = () => {
                   value={category}
                   className="form-control"
                 >
-                  <option value="">-</option>
-                  <option value="1">Game</option>
-                  <option value="2">Computer</option>
+                  <option value="" disabled selected>
+                    please select category
+                  </option>
+                  {categorylist.map((o) => (
+                    <option key={o.category_id} value={o.category_id}>
+                      {o.category_name}
+                    </option>
+                  ))}
                 </select>
                 <div>
                   {errMgs ? (
